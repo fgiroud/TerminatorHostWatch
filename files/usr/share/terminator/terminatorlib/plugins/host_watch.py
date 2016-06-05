@@ -99,7 +99,7 @@ class HostWatch(plugin.Plugin):
         self.watches = {}
         self.profiles = Terminator().config.list_profiles()
         self.update_watches()
-              
+
     def update_watches(self):
         for terminal in Terminator().terminals:
             if terminal not in self.watches:
@@ -107,22 +107,19 @@ class HostWatch(plugin.Plugin):
 
     def check_host(self, _vte, terminal):
         """Our host might have changed..."""
-
         self.update_watches()
 
         last_line = self.get_last_line(terminal)
+        
 
         if last_line:
             patterns = self.get_patterns()
-            for pattern in patterns:
+            for profile, pattern in patterns.iteritems():
                 match = re.match(pattern, last_line)
                 if match:
-                    hostname = match.group(1)
-                    if hostname in self.profiles and hostname != terminal.get_profile():
-                        dbg("switching to profile " + hostname + ", because line '" + last_line + "' matches pattern '" + pattern + "'")
-                        terminal.set_profile(None, hostname, False)
-                        break
-                    
+                    if profile in self.profiles and profile != terminal.get_profile():
+                        dbg("switching to profile : "+profile)
+                        terminal.set_profile(None, profile, False)
         return True
 
     def get_last_line(self, terminal):
@@ -151,9 +148,6 @@ class HostWatch(plugin.Plugin):
         config = Config().plugin_get_config(self.__class__.__name__)
 
         if config and 'patterns' in config:
-            if isinstance(config['patterns'], list):
-               return config['patterns']
-            else:
-               return [config['patterns']]
+            return config["patterns"]
         else: 
-            return [r"[^@]+@(\w+)"]
+            return {'default':"[^@]+@([\w \-\.]+)\:\~\$"}
